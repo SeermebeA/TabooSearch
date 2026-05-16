@@ -14,6 +14,15 @@ Cada dron `k` pertenece a un tipo especifico y posee caracteristicas tecnologica
 - Autonomia de vuelo `B_k`: distancia maxima, o tiempo maximo equivalente, que el dron puede recorrer antes de agotar su bateria.
 - Tiempo de recarga `R_k`: tiempo que el dron debe permanecer en el `CD` conectado a la estacion de carga antes de estar disponible para una nueva mision.
 
+Para la instancia desarrollada en el script se utiliza la siguiente flota:
+
+| Dron | Capacidad maxima `Q_k` | Autonomia `B_k` | Tiempo de recarga `R_k` | Interpretacion operativa |
+|---:|---:|---:|---:|---|
+| 1 | 5.0 | 25.0 | 4.0 | Dron de capacidad media, adecuado para rutas individuales o agrupaciones moderadas. |
+| 2 | 4.0 | 20.0 | 3.0 | Dron de menor recarga, util para ejecutar varias misiones cortas o medianas. |
+| 3 | 7.0 | 32.0 | 6.0 | Dron de mayor capacidad y autonomia, apto para misiones largas y de mayor carga. |
+| 4 | 3.5 | 17.0 | 2.0 | Dron pequeno, conveniente para pedidos cercanos o misiones de baja carga. |
+
 Una mision corresponde al vuelo que realiza un dron desde el `CD`, entregando uno o varios pedidos, y regresando nuevamente al `CD`. En consecuencia, cada mision puede interpretarse como una ruta cerrada:
 
 ```text
@@ -232,6 +241,22 @@ Dron 4: [9, 5], [3]
 Los corchetes representan misiones. Por ejemplo, `[2, 1]` significa que el dron sale del `CD`, atiende primero el Pedido 2, luego el Pedido 1, y retorna al `CD`. El orden dentro de la lista es relevante porque define la secuencia de visita.
 
 La solucion cubre los pedidos del 1 al 15 exactamente una vez, por lo que cumple la restriccion de cobertura total de la demanda. La distribucion tambien muestra que el algoritmo no realiza una asignacion uniforme en cantidad de pedidos, sino una asignacion condicionada por la heterogeneidad de la flota.
+
+La tabla resume las caracteristicas de cada mision de la solucion reportada:
+
+| Dron | Mision | Pedidos | Inicio | Fin | Distancia | Carga | Recarga posterior | Estado |
+|---:|---:|---|---:|---:|---:|---:|---:|---|
+| 1 | 1 | `[8]` | 0.00 | 22.80 | 22.80 | 1.80 | 4.00 | Factible |
+| 1 | 2 | `[12]` | 26.80 | 49.16 | 22.36 | 2.40 | - | Factible |
+| 2 | 1 | `[6]` | 0.00 | 18.97 | 18.97 | 1.50 | 3.00 | Factible |
+| 2 | 2 | `[2, 1]` | 21.97 | 38.37 | 16.40 | 3.40 | 3.00 | Factible |
+| 2 | 3 | `[4]` | 41.37 | 59.81 | 18.44 | 2.80 | - | Factible |
+| 3 | 1 | `[10, 13, 11]` | 0.00 | 31.52 | 31.52 | 6.20 | 6.00 | Factible |
+| 3 | 2 | `[7, 14, 15]` | 37.52 | 66.64 | 29.12 | 5.40 | - | Factible |
+| 4 | 1 | `[9, 5]` | 0.00 | 16.49 | 16.49 | 3.30 | 2.00 | Factible |
+| 4 | 2 | `[3]` | 18.49 | 34.62 | 16.12 | 1.20 | - | Factible |
+
+La columna `Recarga posterior` aplica solamente cuando el mismo dron tiene una mision siguiente. En la ultima mision de cada dron no se suma recarga al `Cmax`, porque el objetivo considera el retorno final al centro de distribucion.
 
 ### 8.3. Analisis por dron
 
