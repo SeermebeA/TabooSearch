@@ -1,0 +1,59 @@
+(.venv) (base) falcon@MacBook-Pro-de-Sergio-2 Ejemplo % python3 hf_drsp_tabu.py
+=== Instancia HF-DRSP ===
+Centro de distribucion: (0, 0)
+
+Drones:
+  Dron 1: Q=5.0, B=25.0, R=4.0
+  Dron 2: Q=4.0, B=20.0, R=3.0
+  Dron 3: Q=7.0, B=32.0, R=6.0
+  Dron 4: Q=3.5, B=17.0, R=2.0
+
+Pedidos:
+  Pedido 01: coord=(2.0, 6.0), peso=1.4
+  Pedido 02: coord=(5.0, 3.0), peso=2.0
+  Pedido 03: coord=(1.0, 8.0), peso=1.2
+  Pedido 04: coord=(7.0, 6.0), peso=2.8
+  Pedido 05: coord=(8.0, 2.0), peso=2.3
+  Pedido 06: coord=(3.0, 9.0), peso=1.5
+  Pedido 07: coord=(6.0, 9.0), peso=2.1
+  Pedido 08: coord=(9.0, 7.0), peso=1.8
+  Pedido 09: coord=(4.0, 1.0), peso=1.0
+  Pedido 10: coord=(10.0, 4.0), peso=2.7
+  Pedido 11: coord=(12.0, 8.0), peso=1.6
+  Pedido 12: coord=(11.0, 2.0), peso=2.4
+  Pedido 13: coord=(13.0, 5.0), peso=1.9
+  Pedido 14: coord=(6.0, 12.0), peso=1.1
+  Pedido 15: coord=(2.0, 11.0), peso=2.2
+
+=== Resultado Busqueda Tabu ===
+Iteraciones ejecutadas: 661
+Makespan Cmax: 66.64
+Funcion objetivo penalizada: 66.64
+Exceso total capacidad: 0.00
+Exceso total bateria: 0.00
+Alpha final: 5.00 | Beta final: 2.00
+
+Plan por dron:
+
+Dron 1:
+  Mision 1: [8] | inicio=0.00, fin=22.80, dist=22.80, carga=1.80, FACTIBLE
+    Recarga: 4.00
+  Mision 2: [12] | inicio=26.80, fin=49.16, dist=22.36, carga=2.40, FACTIBLE
+
+Dron 2:
+  Mision 1: [6] | inicio=0.00, fin=18.97, dist=18.97, carga=1.50, FACTIBLE
+    Recarga: 3.00
+  Mision 2: [2, 1] | inicio=21.97, fin=38.37, dist=16.40, carga=3.40, FACTIBLE
+    Recarga: 3.00
+  Mision 3: [4] | inicio=41.37, fin=59.81, dist=18.44, carga=2.80, FACTIBLE
+
+Dron 3:
+  Mision 1: [10, 13, 11] | inicio=0.00, fin=31.52, dist=31.52, carga=6.20, FACTIBLE
+    Recarga: 6.00
+  Mision 2: [7, 14, 15] | inicio=37.52, fin=66.64, dist=29.12, carga=5.40, FACTIBLE
+
+Dron 4:
+  Mision 1: [9, 5] | inicio=0.00, fin=16.49, dist=16.49, carga=3.30, FACTIBLE
+    Recarga: 2.00
+  Mision 2: [3] | inicio=18.49, fin=34.62, dist=16.12, carga=1.20, FACTIBLE
+(.venv) (base) falcon@MacBook-Pro-de-Sergio-2 Ejemplo % 
