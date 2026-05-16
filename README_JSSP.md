@@ -6,7 +6,9 @@ El ejercicio se desarrolla con fines academicos para la asignatura Modelos de Op
 
 ## 1. Enunciado del problema
 
-Un taller de manufactura avanzado requiere procesar un conjunto de `n` trabajos distintos utilizando un conjunto de `m` maquinas diferentes. A diferencia de un sistema en linea o Flow-Shop, cada trabajo posee su propia ruta tecnologica o secuencia unica de operaciones.
+**Enunciado del problema: Job Shop Scheduling Problem (JSSP).**
+
+Un taller de manufactura avanzado requiere procesar un conjunto de `n` trabajos distintos utilizando un conjunto de `m` maquinas diferentes. A diferencia de un sistema en linea o Flow-Shop, cada trabajo tiene su propia ruta tecnologica o secuencia unica de operaciones. Es decir, no todos los trabajos pasan por las maquinas en el mismo orden.
 
 Por ejemplo:
 
@@ -15,21 +17,21 @@ Trabajo 1: M1 -> M2 -> M3
 Trabajo 2: M3 -> M1 -> M2
 ```
 
-Cada operacion tiene:
+Cada operacion tiene un tiempo de procesamiento determinista y requiere una maquina especifica. En consecuencia, cada operacion se caracteriza por:
 
 - Un trabajo al que pertenece.
 - Una posicion dentro de la secuencia tecnologica del trabajo.
 - Una maquina especifica requerida.
 - Un tiempo de procesamiento determinista.
 
-Las restricciones operativas son:
+Las restricciones operativas dictan que:
 
 - Cada maquina solo puede procesar una operacion a la vez.
 - Las operaciones de un mismo trabajo deben respetar su orden tecnologico.
 - Una vez que una operacion inicia, no puede ser interrumpida. Esto corresponde a la restriccion de no preemption.
 - Todas las operaciones de todos los trabajos deben ser programadas.
 
-El objetivo es encontrar la secuencia de procesamiento de operaciones en cada maquina que minimice el `makespan` `Cmax`, definido como el tiempo total transcurrido desde el inicio de la primera operacion hasta la finalizacion de la ultima operacion del ultimo trabajo.
+El objetivo es encontrar la secuencia u orden de procesamiento de las operaciones en cada maquina que logre minimizar el `makespan` `Cmax`. Este valor representa el tiempo total transcurrido desde el inicio de la primera operacion hasta la finalizacion de la ultima operacion del ultimo trabajo en el taller.
 
 ## 2. Instancia utilizada
 
