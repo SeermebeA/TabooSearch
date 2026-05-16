@@ -2,11 +2,23 @@
 """
 HF-DRSP: Secuenciacion y ruteo de drones de entrega con flota heterogenea.
 
-El script resuelve una instancia del problema con Busqueda Tabu:
+El script resuelve una instancia del problema con Busqueda Tabu. El modelo
+combina dos componentes:
 - Flota heterogenea de drones con capacidad, autonomia y recarga.
 - Misiones como rutas CD -> pedidos -> CD.
 - Scheduling por dron con recarga entre misiones.
 - Funcion objetivo penalizada para explorar soluciones infactibles.
+
+Esquema teorico de la Busqueda Tabu implementada:
+1. Definir una codificacion de solucion S.
+2. Construir una solucion inicial S0.
+3. Evaluar S mediante una funcion objetivo penalizada F(S).
+4. Generar un vecindario N(S) con movimientos de insercion y de intercambio.
+5. Seleccionar el mejor vecino admisible, respetando la lista tabu.
+6. Aplicar criterio de aspiracion si un movimiento tabu mejora el mejor historico.
+7. Actualizar la memoria tabu, la solucion actual y la mejor solucion conocida.
+8. Ajustar penalizaciones dinamicas para balancear factibilidad y exploracion.
+9. Detener por maximo de iteraciones o por iteraciones sin mejora.
 
 Ejecutar:
     python3 hf_drsp_tabu.py
@@ -21,11 +33,20 @@ import random
 from typing import Dict, Iterable, List, Optional, Tuple
 
 
+# El centro de distribucion se modela como nodo 0. Los clientes usan IDs 1..N.
 DEPOT = 0
 
 
 @dataclass(frozen=True)
 class Customer:
+    """Pedido/cliente de la instancia.
+
+    Atributos:
+        id: Identificador del pedido.
+        x, y: Coordenadas cartesianas del cliente.
+        demand: Peso del pedido.
+    """
+
     id: int
     x: float
     y: float
@@ -34,6 +55,15 @@ class Customer:
 
 @dataclass(frozen=True)
 class Drone:
+    """Dron de la flota heterogenea.
+
+    Atributos:
+        id: Identificador del dron.
+        capacity: Capacidad maxima Q_k.
+        battery: Autonomia maxima B_k, medida como distancia maxima.
+        recharge: Tiempo de recarga R_k entre misiones consecutivas.
+    """
+
     id: int
     capacity: float
     battery: float
@@ -42,6 +72,12 @@ class Drone:
 
 @dataclass
 class MissionEval:
+    """Resultado de evaluar una mision especifica.
+
+    Esta estructura almacena tanto valores de ruteo, como distancia y carga,
+    como valores de scheduling, como instante de inicio y finalizacion.
+    """
+
     distance: float
     load: float
     capacity_excess: float
@@ -50,15 +86,24 @@ class MissionEval:
     finish: float
 
 
+# Codificacion de solucion:
+# Solution[dron][mision][posicion] = ID del pedido visitado.
+# Ejemplo: [[[8], [12]], [[6], [2, 1]]] representa dos drones.
 Solution = List[List[List[int]]]
+
+# Codificacion de movimiento:
+# (tipo_movimiento, detalle, atributos_tabu)
+# atributos_tabu usa pares (ID_Pedido, ID_Dron) para evitar reversas inmediatas.
 Move = Tuple[str, Tuple[int, ...], List[Tuple[int, int]]]
 
 
 def euclidean(a: Tuple[float, float], b: Tuple[float, float]) -> float:
+    """Calcula distancia euclidiana entre dos puntos."""
     return math.hypot(a[0] - b[0], a[1] - b[1])
 
 
 def build_distance_matrix(customers: Dict[int, Customer]) -> Dict[Tuple[int, int], float]:
+    """Construye la matriz completa de distancias entre CD y clientes."""
     points = {DEPOT: (0.0, 0.0)}
     points.update({cid: (c.x, c.y) for cid, c in customers.items()})
     return {
@@ -69,6 +114,7 @@ def build_distance_matrix(customers: Dict[int, Customer]) -> Dict[Tuple[int, int
 
 
 def route_distance(route: List[int], distances: Dict[Tuple[int, int], float]) -> float:
+    """Calcula la distancia de una ruta cerrada CD -> clientes -> CD."""
     if not route:
         return 0.0
     total = distances[(DEPOT, route[0])]
@@ -86,6 +132,25 @@ def evaluate_solution(
     alpha: float,
     beta: float,
 ) -> Tuple[float, float, float, float, List[List[MissionEval]]]:
+    """Evalua una solucion segun la funcion objetivo penalizada.
+
+    Paso teorico de Busqueda Tabu: evaluacion de la solucion.
+
+    Para cada dron se simula cronologicamente su secuencia de misiones:
+    - El tiempo de vuelo de una mision se aproxima por la distancia de la ruta.
+    - Entre dos misiones consecutivas se agrega el tiempo de recarga R_k.
+    - El makespan Cmax es el mayor tiempo de finalizacion entre drones.
+
+    La funcion penalizada permite aceptar temporalmente soluciones infactibles:
+        F(S) = Cmax + alpha * exceso_capacidad + beta * exceso_bateria
+
+    Retorna:
+        objective: Valor F(S).
+        makespan: Cmax sin penalizaciones.
+        capacity_excess: Suma de excesos sobre Q_k.
+        battery_excess: Suma de excesos sobre B_k.
+        schedule: Detalle temporal y operativo de cada mision.
+    """
     makespan = 0.0
     capacity_excess = 0.0
     battery_excess = 0.0
@@ -97,11 +162,13 @@ def evaluate_solution(
         drone_schedule: List[MissionEval] = []
 
         for mission_idx, mission in enumerate(missions):
+            # Evaluacion de ruteo: distancia total y carga transportada.
             distance = route_distance(mission, distances)
             load = sum(customers[customer_id].demand for customer_id in mission)
             c_excess = max(0.0, load - drone.capacity)
             b_excess = max(0.0, distance - drone.battery)
 
+            # Evaluacion de scheduling: inicio, finalizacion y recarga posterior.
             start = clock
             finish = start + distance
             drone_schedule.append(
@@ -134,6 +201,7 @@ def is_feasible(
     customers: Dict[int, Customer],
     distances: Dict[Tuple[int, int], float],
 ) -> bool:
+    """Indica si una solucion respeta capacidad y autonomia."""
     _, _, capacity_excess, battery_excess, _ = evaluate_solution(
         solution, drones, customers, distances, alpha=1.0, beta=1.0
     )
@@ -141,6 +209,7 @@ def is_feasible(
 
 
 def validate_customer_coverage(solution: Solution, customer_ids: Iterable[int]) -> None:
+    """Verifica que cada pedido sea atendido exactamente una vez."""
     expected = sorted(customer_ids)
     assigned = sorted(
         customer_id
@@ -158,6 +227,7 @@ def validate_customer_coverage(solution: Solution, customer_ids: Iterable[int]) 
 
 
 def normalize_solution(solution: Solution) -> Solution:
+    """Elimina misiones vacias despues de aplicar movimientos de vecindario."""
     return [[mission for mission in drone_missions if mission] for drone_missions in solution]
 
 
@@ -166,7 +236,20 @@ def initial_solution(
     customers: Dict[int, Customer],
     distances: Dict[Tuple[int, int], float],
 ) -> Solution:
-    """Construye una solucion inicial greedy por insercion secuencial."""
+    """Construye la solucion inicial S0.
+
+    Paso teorico de Busqueda Tabu: inicializacion.
+
+    Se usa una heuristica greedy:
+    1. Ordena pedidos por demanda descendente.
+    2. Intenta insertar cada pedido en misiones existentes de drones con mayor
+       capacidad.
+    3. Si no encuentra insercion factible, crea una mision nueva en el dron
+       con menor violacion estimada.
+
+    La solucion inicial no tiene que ser optima; su funcion es dar un punto de
+    partida razonable para explorar el espacio de soluciones.
+    """
     solution: Solution = [[] for _ in drones]
     ordered_customers = sorted(customers.values(), key=lambda c: c.demand, reverse=True)
     drone_order = sorted(range(len(drones)), key=lambda idx: drones[idx].capacity, reverse=True)
@@ -199,6 +282,7 @@ def initial_solution(
 
 
 def mission_positions(solution: Solution) -> List[Tuple[int, int, int]]:
+    """Lista todas las posiciones donde existe un pedido dentro de la solucion."""
     positions = []
     for drone_idx, missions in enumerate(solution):
         for mission_idx, mission in enumerate(missions):
@@ -213,6 +297,7 @@ def random_existing_or_new_mission(
     rng: random.Random,
     allow_new: bool = True,
 ) -> int:
+    """Elige una mision destino existente o una nueva mision."""
     mission_count = len(solution[drone_idx])
     if allow_new and (mission_count == 0 or rng.random() < 0.25):
         return mission_count
@@ -220,6 +305,18 @@ def random_existing_or_new_mission(
 
 
 def generate_shift(solution: Solution, rng: random.Random) -> Optional[Tuple[Solution, Move]]:
+    """Genera un vecino mediante movimiento Shift.
+
+    Paso teorico de Busqueda Tabu: construccion del vecindario N(S).
+
+    Movimiento Shift:
+    - Selecciona un pedido de una mision origen.
+    - Lo remueve de su posicion actual.
+    - Lo inserta en una mision existente o en una mision nueva.
+
+    El atributo tabu registrado es (pedido, dron_origen), lo que prohibe
+    devolver inmediatamente ese pedido al dron del que salio.
+    """
     positions = mission_positions(solution)
     if not positions:
         return None
@@ -250,6 +347,17 @@ def generate_shift(solution: Solution, rng: random.Random) -> Optional[Tuple[Sol
 
 
 def generate_swap(solution: Solution, rng: random.Random) -> Optional[Tuple[Solution, Move]]:
+    """Genera un vecino mediante movimiento Swap.
+
+    Paso teorico de Busqueda Tabu: construccion del vecindario N(S).
+
+    Movimiento Swap:
+    - Selecciona dos pedidos ubicados en la solucion.
+    - Intercambia sus posiciones.
+
+    Este movimiento ayuda a balancear carga, distancia y tiempos entre drones.
+    Los atributos tabu prohiben revertir de inmediato el intercambio.
+    """
     positions = mission_positions(solution)
     if len(positions) < 2:
         return None
@@ -278,6 +386,14 @@ def generate_neighbors(
     rng: random.Random,
     neighborhood_size: int,
 ) -> Iterable[Tuple[Solution, Move]]:
+    """Genera una muestra aleatoria del vecindario N(S).
+
+    En problemas combinatorios grandes, evaluar todos los vecinos puede ser
+    costoso. Por eso se genera una muestra de tamano `neighborhood_size`.
+    La mezcla 65% Shift y 35% Swap favorece la reasignacion de pedidos, pero
+    conserva intercambios para intensificar la busqueda alrededor de buenas
+    estructuras.
+    """
     seen = set()
     attempts = 0
     max_attempts = neighborhood_size * 8
@@ -308,18 +424,56 @@ def tabu_search(
     neighborhood_size: int = 90,
     seed: int = 42,
 ) -> Dict[str, object]:
+    """Ejecuta el algoritmo principal de Busqueda Tabu.
+
+    Pasos teoricos implementados:
+    1. Inicializacion:
+       - Fijar semilla aleatoria.
+       - Definir penalizaciones iniciales alpha y beta.
+       - Construir solucion inicial S0.
+
+    2. Evaluacion:
+       - Calcular F(S), Cmax y excesos de restricciones.
+
+    3. Memoria tabu:
+       - Guardar atributos (ID_Pedido, ID_Dron) con una iteracion de expiracion.
+       - Usar tenor tabu dinamico aleatorio entre `tabu_min` y `tabu_max`.
+
+    4. Generacion de vecindario:
+       - Crear vecinos por Shift y Swap.
+
+    5. Seleccion de movimiento:
+       - Escoger el mejor vecino admisible segun F(S).
+       - Rechazar movimientos tabu salvo que cumplan aspiracion.
+
+    6. Aspiracion:
+       - Si un movimiento tabu produce un makespan factible estrictamente mejor
+         que el mejor historico factible, se acepta.
+
+    7. Actualizacion:
+       - Mover la solucion actual al mejor vecino seleccionado.
+       - Actualizar lista tabu, mejor solucion global y mejor factible.
+       - Ajustar alpha y beta segun la presencia de violaciones.
+
+    8. Parada:
+       - Terminar al alcanzar `max_iterations`.
+       - O terminar tras `max_no_improvement` iteraciones consecutivas sin mejora.
+    """
     rng = random.Random(seed)
     alpha = 25.0
     beta = 8.0
 
+    # Paso 1: construir solucion inicial y evaluarla.
     current = initial_solution(drones, customers, distances)
     current_eval = evaluate_solution(current, drones, customers, distances, alpha, beta)
 
+    # Mejor solucion segun la funcion penalizada y mejor solucion factible.
     best = deepcopy(current)
     best_eval = current_eval
     best_feasible = deepcopy(current) if is_feasible(current, drones, customers, distances) else None
     best_feasible_eval = current_eval if best_feasible is not None else None
 
+    # Memoria tabu: atributo -> iteracion hasta la que permanece prohibido.
     tabu_until: Dict[Tuple[int, int], int] = {}
     no_improvement = 0
     history = []
@@ -329,13 +483,18 @@ def tabu_search(
         best_candidate_eval = None
         best_candidate_move = None
 
+        # Paso 2: generar y evaluar una muestra del vecindario N(current).
         for candidate, move in generate_neighbors(current, rng, neighborhood_size):
             objective, makespan, capacity_excess, battery_excess, _ = evaluate_solution(
                 candidate, drones, customers, distances, alpha, beta
             )
             tabu_attributes = move[2]
+
+            # Paso 3: verificar si algun atributo del movimiento esta tabu.
             is_tabu = any(tabu_until.get(attr, -1) >= iteration for attr in tabu_attributes)
 
+            # Paso 4: criterio de aspiracion global.
+            # Un movimiento tabu puede aceptarse si mejora el mejor Cmax factible.
             aspiration = (
                 best_feasible_eval is not None
                 and capacity_excess == 0.0
@@ -345,21 +504,28 @@ def tabu_search(
             if is_tabu and not aspiration:
                 continue
 
+            # Paso 5: elegir el mejor vecino admisible segun F(S).
             if best_candidate_eval is None or objective < best_candidate_eval[0]:
                 best_candidate = candidate
                 best_candidate_eval = (objective, makespan, capacity_excess, battery_excess, None)
                 best_candidate_move = move
 
+        # Si no existe vecino admisible, se detiene la busqueda.
         if best_candidate is None or best_candidate_eval is None or best_candidate_move is None:
             break
 
+        # Paso 6: mover la solucion actual al mejor vecino seleccionado.
         current = best_candidate
         current_eval = evaluate_solution(current, drones, customers, distances, alpha, beta)
         _, makespan, capacity_excess, battery_excess, _ = current_eval
 
+        # Paso 7: actualizar memoria tabu con tenor dinamico aleatorio.
         for attr in best_candidate_move[2]:
             tabu_until[attr] = iteration + rng.randint(tabu_min, tabu_max)
 
+        # Paso 8: actualizar penalizaciones dinamicas.
+        # Si la solucion actual es factible, se relaja la penalizacion.
+        # Si hay violaciones, se incrementa el castigo correspondiente.
         if capacity_excess == 0.0 and battery_excess == 0.0:
             alpha = max(5.0, alpha * 0.97)
             beta = max(2.0, beta * 0.97)
@@ -367,6 +533,7 @@ def tabu_search(
             alpha = min(500.0, alpha * (1.03 if capacity_excess > 0.0 else 0.99))
             beta = min(500.0, beta * (1.03 if battery_excess > 0.0 else 0.99))
 
+        # Paso 9: actualizar mejores soluciones historicas.
         improved = False
         if current_eval[0] < best_eval[0]:
             best = deepcopy(current)
@@ -380,11 +547,15 @@ def tabu_search(
                 improved = True
 
         no_improvement = 0 if improved else no_improvement + 1
-        history.append((iteration, best_eval[0], best_eval[1], alpha, beta))
+        best_feasible_makespan = best_feasible_eval[1] if best_feasible_eval is not None else None
+        history.append((iteration, best_eval[0], best_eval[1], alpha, beta, best_feasible_makespan))
 
+        # Paso 10: criterio de parada por estancamiento.
         if no_improvement >= max_no_improvement:
             break
 
+    # Se reporta preferentemente la mejor solucion factible. Si no existiera,
+    # se reportaria la mejor solucion penalizada encontrada.
     selected = best_feasible if best_feasible is not None else best
     selected_eval = best_feasible_eval if best_feasible_eval is not None else best_eval
     validate_customer_coverage(selected, customers.keys())
@@ -405,6 +576,14 @@ def tabu_search(
 
 
 def demo_instance() -> Tuple[List[Drone], Dict[int, Customer], Dict[Tuple[int, int], float]]:
+    """Define la instancia academica usada en el taller.
+
+    Clientes:
+        Cada entrada contiene ID, coordenada x, coordenada y y peso del pedido.
+
+    Drones:
+        Cada entrada contiene ID, capacidad Q_k, autonomia B_k y recarga R_k.
+    """
     customers = {
         1: Customer(1, 2, 6, 1.4),
         2: Customer(2, 5, 3, 2.0),
@@ -435,6 +614,7 @@ def demo_instance() -> Tuple[List[Drone], Dict[int, Customer], Dict[Tuple[int, i
 
 
 def print_instance(drones: List[Drone], customers: Dict[int, Customer]) -> None:
+    """Imprime los datos base de la instancia."""
     print("=== Instancia HF-DRSP ===")
     print("Centro de distribucion: (0, 0)")
     print("\nDrones:")
@@ -452,6 +632,7 @@ def print_instance(drones: List[Drone], customers: Dict[int, Customer]) -> None:
 
 
 def print_solution(result: Dict[str, object], drones: List[Drone]) -> None:
+    """Imprime la solucion en formato legible para analisis academico."""
     solution = result["solution"]
     schedule = result["schedule"]
     assert isinstance(solution, list)
@@ -489,6 +670,7 @@ def print_solution(result: Dict[str, object], drones: List[Drone]) -> None:
 
 
 def main() -> None:
+    """Punto de entrada del script."""
     drones, customers, distances = demo_instance()
     print_instance(drones, customers)
     result = tabu_search(

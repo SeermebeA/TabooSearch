@@ -175,6 +175,7 @@ El script genera los siguientes archivos dentro de la carpeta `figures`:
 ```text
 figures/misiones_drones.png
 figures/gantt_misiones.png
+figures/hf_drsp_convergencia.png
 ```
 
 Si se desea recalcular la solucion mediante Busqueda Tabu antes de graficar, ejecutar:
@@ -198,6 +199,14 @@ La siguiente figura muestra la programacion temporal de las misiones. Las barras
 ![Diagrama de Gantt de misiones y recargas](figures/gantt_misiones.png)
 
 El diagrama de Gantt permite interpretar el componente de scheduling del problema. Aunque los drones operan en paralelo, cada dron debe respetar su secuencia interna de misiones y los tiempos de recarga. En la solucion reportada, el Dron 3 define el makespan porque su segunda mision finaliza en `66.64`, mientras los demas drones terminan antes.
+
+### 7.3. Curva de convergencia
+
+La siguiente figura muestra la evolucion del mejor `Cmax` historico durante la Busqueda Tabu. Esta grafica permite observar en que etapas el algoritmo encuentra mejoras y cuando entra en una fase de estabilizacion sin mejoras relevantes.
+
+![Curva de convergencia de la Busqueda Tabu para HF-DRSP](figures/hf_drsp_convergencia.png)
+
+Desde la perspectiva de optimizacion, una disminucion escalonada de la curva indica que los movimientos del vecindario lograron encontrar soluciones con menor makespan. Cuando la curva se vuelve horizontal, la busqueda continua explorando, pero no encuentra una solucion historicamente mejor durante ese tramo.
 
 ## 8. Analisis del resultado obtenido
 

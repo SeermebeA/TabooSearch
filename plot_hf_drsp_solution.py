@@ -3,6 +3,7 @@
 Genera graficas para la solucion HF-DRSP:
 - Ubicacion y rutas de las misiones por dron.
 - Diagrama de Gantt con vuelos y recargas.
+- Curva de convergencia de la Busqueda Tabu.
 
 Ejecutar:
     python3 plot_hf_drsp_solution.py
@@ -220,6 +221,56 @@ def plot_gantt_chart(
     plt.close(fig)
 
 
+def plot_convergence(history, output_path: Path) -> None:
+    """Genera la curva de convergencia del mejor Cmax factible historico."""
+    fig, ax = plt.subplots(figsize=(10, 5.5))
+
+    if history:
+        feasible_history = [item for item in history if len(item) > 5 and item[5] is not None]
+    else:
+        feasible_history = []
+
+    if feasible_history:
+        iterations = [item[0] for item in feasible_history]
+        best_makespan_values = [item[5] for item in feasible_history]
+        ax.plot(iterations, best_makespan_values, color="#1f77b4", linewidth=2.2)
+        ax.scatter(iterations[-1], best_makespan_values[-1], color="#d62728", zorder=4)
+        ax.annotate(
+            f"Mejor Cmax = {best_makespan_values[-1]:.2f}",
+            (iterations[-1], best_makespan_values[-1]),
+            xytext=(-125, 20),
+            textcoords="offset points",
+            fontsize=10,
+            weight="bold",
+            arrowprops={"arrowstyle": "->", "color": "#333333"},
+        )
+
+    ax.set_title("Convergencia factible de la Busqueda Tabu para HF-DRSP", fontsize=14, weight="bold")
+    ax.set_xlabel("Iteracion")
+    ax.set_ylabel("Mejor Cmax factible historico")
+    ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.45)
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=180, bbox_inches="tight")
+    plt.close(fig)
+
+
+def compute_convergence_history():
+    """Ejecuta Busqueda Tabu para obtener el historial de convergencia."""
+    drones, customers, distances = demo_instance()
+    result = tabu_search(
+        drones,
+        customers,
+        distances,
+        max_iterations=2000,
+        max_no_improvement=300,
+        tabu_min=7,
+        tabu_max=15,
+        neighborhood_size=100,
+        seed=2026,
+    )
+    return result["history"]
+
+
 def solve_or_load_reported_solution(resolve: bool):
     drones, customers, distances = demo_instance()
     if resolve:
@@ -280,14 +331,17 @@ def main() -> None:
 
     map_path = output_dir / "misiones_drones.png"
     gantt_path = output_dir / "gantt_misiones.png"
+    convergence_path = output_dir / "hf_drsp_convergencia.png"
 
     plot_mission_map(solution, drones, customers, map_path)
     plot_gantt_chart(solution, drones, schedule, makespan, gantt_path)
+    plot_convergence(compute_convergence_history(), convergence_path)
 
     print(f"Fuente: {source}")
     print(f"Makespan Cmax: {makespan:.2f}")
     print(f"Grafica de misiones: {map_path}")
     print(f"Diagrama de Gantt: {gantt_path}")
+    print(f"Curva de convergencia: {convergence_path}")
 
 
 if __name__ == "__main__":

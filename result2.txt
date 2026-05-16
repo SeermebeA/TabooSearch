@@ -1,0 +1,57 @@
+=== Instancia JSSP ===
+Trabajos: 5
+Maquinas: 4 -> [1, 2, 3, 4]
+
+Rutas tecnologicas:
+  Trabajo 1: M1(p=6) -> M2(p=4) -> M3(p=5) -> M4(p=3)
+  Trabajo 2: M3(p=5) -> M1(p=3) -> M4(p=6) -> M2(p=4)
+  Trabajo 3: M2(p=4) -> M4(p=7) -> M1(p=5) -> M3(p=3)
+  Trabajo 4: M4(p=3) -> M3(p=6) -> M2(p=5) -> M1(p=4)
+  Trabajo 5: M1(p=5) -> M3(p=4) -> M2(p=6) -> M4(p=5)
+
+=== Resultado Busqueda Tabu JSSP ===
+Iteraciones ejecutadas: 275
+Makespan Cmax: 28
+
+Secuencia de prioridad por maquina:
+  Maquina 1: [1, 5, 2, 4, 3]
+  Maquina 2: [3, 1, 4, 5, 2]
+  Maquina 3: [2, 4, 5, 1, 3]
+  Maquina 4: [4, 3, 2, 1, 5]
+
+Calendario por maquina:
+
+Maquina 1:
+  Trabajo 1 - Op 1: inicio=0, fin=6, p=6
+  Trabajo 5 - Op 1: inicio=6, fin=11, p=5
+  Trabajo 2 - Op 2: inicio=11, fin=14, p=3
+  Trabajo 4 - Op 4: inicio=16, fin=20, p=4
+  Trabajo 3 - Op 3: inicio=20, fin=25, p=5
+
+Maquina 2:
+  Trabajo 3 - Op 1: inicio=0, fin=4, p=4
+  Trabajo 1 - Op 2: inicio=6, fin=10, p=4
+  Trabajo 4 - Op 3: inicio=11, fin=16, p=5
+  Trabajo 5 - Op 3: inicio=16, fin=22, p=6
+  Trabajo 2 - Op 4: inicio=22, fin=26, p=4
+
+Maquina 3:
+  Trabajo 2 - Op 1: inicio=0, fin=5, p=5
+  Trabajo 4 - Op 2: inicio=5, fin=11, p=6
+  Trabajo 5 - Op 2: inicio=11, fin=15, p=4
+  Trabajo 1 - Op 3: inicio=15, fin=20, p=5
+  Trabajo 3 - Op 4: inicio=25, fin=28, p=3
+
+Maquina 4:
+  Trabajo 4 - Op 1: inicio=0, fin=3, p=3
+  Trabajo 3 - Op 2: inicio=4, fin=11, p=7
+  Trabajo 2 - Op 3: inicio=14, fin=20, p=6
+  Trabajo 1 - Op 4: inicio=20, fin=23, p=3
+  Trabajo 5 - Op 4: inicio=23, fin=28, p=5
+
+Calendario por trabajo:
+  Trabajo 1: M1[0,6] -> M2[6,10] -> M3[15,20] -> M4[20,23]
+  Trabajo 2: M3[0,5] -> M1[11,14] -> M4[14,20] -> M2[22,26]
+  Trabajo 3: M2[0,4] -> M4[4,11] -> M1[20,25] -> M3[25,28]
+  Trabajo 4: M4[0,3] -> M3[5,11] -> M2[11,16] -> M1[16,20]
+  Trabajo 5: M1[6,11] -> M3[11,15] -> M2[16,22] -> M4[23,28]
