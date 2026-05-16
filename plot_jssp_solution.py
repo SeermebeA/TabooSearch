@@ -16,7 +16,17 @@ from typing import Dict, List
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
-from jssp_tabu import ScheduledOperation, demo_instance, tabu_search_jssp
+from jssp_tabu import (
+    MAX_ITERATIONS,
+    MAX_NO_IMPROVEMENT,
+    NEIGHBORHOOD_SIZE,
+    RANDOM_SEED,
+    TABU_MAX,
+    TABU_MIN,
+    ScheduledOperation,
+    demo_instance,
+    tabu_search_jssp,
+)
 
 
 JOB_COLORS: Dict[int, str] = {
@@ -132,12 +142,12 @@ def main() -> None:
     result = tabu_search_jssp(
         jobs,
         machines,
-        max_iterations=1500,
-        max_no_improvement=250,
-        tabu_min=6,
-        tabu_max=14,
-        neighborhood_size=90,
-        seed=2026,
+        max_iterations=MAX_ITERATIONS,
+        max_no_improvement=MAX_NO_IMPROVEMENT,
+        tabu_min=TABU_MIN,
+        tabu_max=TABU_MAX,
+        neighborhood_size=NEIGHBORHOOD_SIZE,
+        seed=RANDOM_SEED,
     )
 
     output_dir = Path("figures")

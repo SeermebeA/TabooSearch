@@ -75,22 +75,37 @@ MachineSequences = Dict[int, List[int]]
 Move = Tuple[int, int, int, int, int]
 
 
+# Parametros fijos de la instancia academica.
+# Mantener estos valores constantes permite reproducir resultados similares
+# en cualquier contexto de analisis o exposicion.
+NUM_JOBS = 5
+NUM_MACHINES = 4
+MACHINES = [1, 2, 3, 4]
+RAW_JOBS = {
+    1: [(1, 6), (2, 4), (3, 5), (4, 3)],
+    2: [(3, 5), (1, 3), (4, 6), (2, 4)],
+    3: [(2, 4), (4, 7), (1, 5), (3, 3)],
+    4: [(4, 3), (3, 6), (2, 5), (1, 4)],
+    5: [(1, 5), (3, 4), (2, 6), (4, 5)],
+}
+
+# Parametros fijos de Busqueda Tabu.
+MAX_ITERATIONS = 1500
+MAX_NO_IMPROVEMENT = 250
+TABU_MIN = 6
+TABU_MAX = 14
+NEIGHBORHOOD_SIZE = 90
+RANDOM_SEED = 2026
+
+
 def demo_instance() -> Tuple[Jobs, List[int]]:
     """Define una instancia academica pequena de JSSP.
 
     La instancia contiene 5 trabajos y 4 maquinas. Cada trabajo tiene una ruta
     tecnologica diferente, lo que distingue el JSSP de un Flow-Shop.
     """
-    raw_jobs = {
-        1: [(1, 6), (2, 4), (3, 5), (4, 3)],
-        2: [(3, 5), (1, 3), (4, 6), (2, 4)],
-        3: [(2, 4), (4, 7), (1, 5), (3, 3)],
-        4: [(4, 3), (3, 6), (2, 5), (1, 4)],
-        5: [(1, 5), (3, 4), (2, 6), (4, 5)],
-    }
-
     jobs: Jobs = {}
-    for job_id, route in raw_jobs.items():
+    for job_id, route in RAW_JOBS.items():
         jobs[job_id] = [
             Operation(
                 job_id=job_id,
@@ -101,7 +116,9 @@ def demo_instance() -> Tuple[Jobs, List[int]]:
             for op_idx, (machine_id, processing_time) in enumerate(route)
         ]
 
-    machines = sorted({machine_id for route in raw_jobs.values() for machine_id, _ in route})
+    machines = list(MACHINES)
+    if len(jobs) != NUM_JOBS or len(machines) != NUM_MACHINES:
+        raise ValueError("Los parametros NUM_JOBS o NUM_MACHINES no coinciden con la instancia.")
     return jobs, machines
 
 
@@ -353,8 +370,15 @@ def tabu_search_jssp(
 def print_instance(jobs: Jobs, machines: List[int]) -> None:
     """Imprime la instancia JSSP."""
     print("=== Instancia JSSP ===")
-    print(f"Trabajos: {len(jobs)}")
-    print(f"Maquinas: {len(machines)} -> {machines}")
+    print(f"Trabajos n: {len(jobs)}")
+    print(f"Maquinas m: {len(machines)} -> {machines}")
+    print(f"Operaciones totales: {sum(len(route) for route in jobs.values())}")
+    print(
+        "Parametros Tabu: "
+        f"max_iter={MAX_ITERATIONS}, sin_mejora={MAX_NO_IMPROVEMENT}, "
+        f"tenor=[{TABU_MIN}, {TABU_MAX}], vecinos={NEIGHBORHOOD_SIZE}, "
+        f"semilla={RANDOM_SEED}"
+    )
     print("\nRutas tecnologicas:")
     for job_id, route in jobs.items():
         route_text = " -> ".join(
@@ -413,12 +437,12 @@ def main() -> None:
     result = tabu_search_jssp(
         jobs,
         machines,
-        max_iterations=1500,
-        max_no_improvement=250,
-        tabu_min=6,
-        tabu_max=14,
-        neighborhood_size=90,
-        seed=2026,
+        max_iterations=MAX_ITERATIONS,
+        max_no_improvement=MAX_NO_IMPROVEMENT,
+        tabu_min=TABU_MIN,
+        tabu_max=TABU_MAX,
+        neighborhood_size=NEIGHBORHOOD_SIZE,
+        seed=RANDOM_SEED,
     )
     print_solution(result, machines)
 

@@ -37,6 +37,21 @@ El objetivo es encontrar la secuencia u orden de procesamiento de las operacione
 
 La instancia academica implementada en `jssp_tabu.py` contiene 5 trabajos y 4 maquinas.
 
+### 2.1. Parametros generales
+
+Para asegurar que el analisis sea reproducible y comparable en cualquier contexto, el script fija explicitamente los siguientes parametros:
+
+| Parametro | Simbolo | Valor usado | Descripcion |
+|---|---:|---:|---|
+| Numero de trabajos | `n` | 5 | Cantidad de trabajos que deben procesarse. |
+| Numero de maquinas | `m` | 4 | Cantidad de recursos productivos disponibles. |
+| Operaciones por trabajo | - | 4 | Cada trabajo visita cuatro maquinas en una ruta propia. |
+| Total de operaciones | `n x m` | 20 | Total de operaciones a programar. |
+| Interrupcion permitida | - | No | Se cumple la restriccion de no preemption. |
+| Objetivo | `Cmax` | Minimizar | Tiempo de finalizacion de la ultima operacion. |
+
+Estos parametros estan definidos en `jssp_tabu.py` mediante constantes como `NUM_JOBS`, `NUM_MACHINES`, `MACHINES` y `RAW_JOBS`.
+
 | Trabajo | Ruta tecnologica |
 |---:|---|
 | 1 | `M1(p=6) -> M2(p=4) -> M3(p=5) -> M4(p=3)` |
@@ -46,6 +61,21 @@ La instancia academica implementada en `jssp_tabu.py` contiene 5 trabajos y 4 ma
 | 5 | `M1(p=5) -> M3(p=4) -> M2(p=6) -> M4(p=5)` |
 
 La notacion `M1(p=6)` indica que la operacion requiere la maquina 1 y tiene tiempo de procesamiento igual a 6 unidades.
+
+### 2.2. Parametros de Busqueda Tabu
+
+El comportamiento de la metaheuristica tambien se fija mediante parametros constantes, con el fin de obtener resultados similares entre ejecuciones:
+
+| Parametro | Valor | Proposito |
+|---|---:|---|
+| Semilla aleatoria `RANDOM_SEED` | 2026 | Hace reproducible la generacion de vecinos. |
+| Iteraciones maximas `MAX_ITERATIONS` | 1500 | Limite superior de exploracion. |
+| Iteraciones sin mejora `MAX_NO_IMPROVEMENT` | 250 | Criterio de parada por estancamiento. |
+| Tenor tabu minimo `TABU_MIN` | 6 | Duracion minima de prohibicion de un movimiento reverso. |
+| Tenor tabu maximo `TABU_MAX` | 14 | Duracion maxima de prohibicion de un movimiento reverso. |
+| Tamano del vecindario `NEIGHBORHOOD_SIZE` | 90 | Cantidad de vecinos evaluados por iteracion. |
+
+Si estos valores se mantienen sin cambios, el resultado esperado para la instancia es un makespan cercano o igual a `Cmax = 28`, dependiendo del entorno de ejecucion y de la version de Python. En este repositorio se usa una semilla fija para favorecer reproducibilidad.
 
 ## 3. Enfoque de solucion
 
