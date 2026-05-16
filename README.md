@@ -171,18 +171,35 @@ deactivate
 
 ### Enunciado del problema
 
-Una empresa de logistica de ultima milla opera desde un centro de distribucion ubicado en el punto `(0, 0)` y debe entregar un conjunto de pedidos a diferentes clientes de la ciudad. Para realizar las entregas dispone de una flota heterogenea de drones. Cada dron `k` cuenta con tres parametros operativos principales: capacidad maxima de carga `Q_k`, autonomia de vuelo `B_k` y tiempo de recarga `R_k`.
+El problema abordado corresponde a la secuenciacion y ruteo de drones de entrega con flota heterogenea y tiempos de recarga, denominado HF-DRSP por sus siglas en ingles: Heterogeneous Fleet Drone Routing and Scheduling Problem.
 
-Una mision corresponde al recorrido que inicia en el centro de distribucion, visita uno o varios clientes, entrega sus pedidos y retorna nuevamente al centro de distribucion. Para que una mision sea factible, la suma de las cargas transportadas no debe superar la capacidad del dron asignado y la distancia total recorrida no debe exceder su autonomia disponible. Cuando un dron finaliza una mision, queda indisponible durante su tiempo de recarga antes de poder ejecutar una nueva mision.
+Una empresa de logistica de ultima milla opera desde un centro de distribucion `CD`, ubicado para esta instancia en el punto `(0, 0)`, y debe entregar un conjunto de `N` pedidos a diferentes clientes de la ciudad. Para realizar las entregas dispone de una flota heterogenea de `M` drones. Cada dron `k` pertenece a un tipo especifico y posee caracteristicas tecnologicas particulares que condicionan las decisiones de ruteo y programacion:
+
+- Capacidad de carga maxima `Q_k`: peso maximo que el dron puede transportar en un solo vuelo.
+- Autonomia de vuelo `B_k`: distancia maxima, o tiempo maximo equivalente, que el dron puede recorrer antes de agotar su bateria.
+- Tiempo de recarga `R_k`: tiempo que el dron debe permanecer en el `CD` conectado a la estacion de carga antes de estar disponible para una nueva mision.
+
+Una mision corresponde al vuelo que realiza un dron desde el `CD`, entregando uno o varios pedidos, y regresando nuevamente al `CD`. En consecuencia, cada mision puede interpretarse como una ruta cerrada de la forma:
+
+```text
+CD -> Pedido i -> Pedido j -> ... -> CD
+```
+
+Para que una mision sea factible deben cumplirse las siguientes condiciones operativas:
+
+- El peso total de los pedidos incluidos en la mision no puede exceder la capacidad `Q_k` del dron asignado.
+- La distancia total recorrida en la mision no puede exceder la autonomia `B_k` del dron.
+- Al finalizar una mision, el dron queda bloqueado durante un tiempo igual a `R_k` antes de poder iniciar la siguiente mision.
+- Todos los pedidos deben ser entregados exactamente una vez.
 
 El objetivo del problema es determinar simultaneamente:
 
 - La asignacion de pedidos a drones.
 - La agrupacion de pedidos en misiones.
 - El orden de visita de los clientes dentro de cada mision.
-- La secuencia temporal de misiones para cada dron.
+- La programacion o scheduling de las misiones para cada dron.
 
-La funcion objetivo es minimizar el `makespan` `Cmax`, definido como el instante en que el ultimo dron finaliza su ultima mision y regresa al centro de distribucion. En otras palabras, se busca completar todas las entregas en el menor tiempo total posible, respetando capacidad, autonomia y recarga.
+La funcion objetivo es minimizar el `makespan` `Cmax`, definido como el instante de tiempo en que el ultimo dron finaliza su ultima mision y retorna al `CD`. En otras palabras, se busca completar todas las entregas en el menor tiempo total posible, asegurando que todos los clientes reciban sus paquetes y respetando las restricciones de capacidad, autonomia y recarga.
 
 El archivo `result.txt` contiene la salida de una ejecucion del algoritmo de Busqueda Tabu aplicado al problema HF-DRSP (Heterogeneous Fleet Drone Routing and Scheduling Problem). Este problema integra dos familias clasicas de optimizacion combinatoria:
 
